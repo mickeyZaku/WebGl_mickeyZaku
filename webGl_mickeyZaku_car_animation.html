@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>hello world</title>
+    <script type="text/javascript" src="js/three.js"></script>
+    <script src="js/TrackballControls.js"></script>
+    <script src="js/stats.js"></script>
+</head>
+<body onload="init()">
+<canvas id="mCanvas" style="width: 500px;height: 400px;"></canvas>
+
+</body>
+<script>
+    function init() {
+        var id = null;
+        var requestAnimationFrame = window.requestAnimationFrame
+            || window.mozRequestAnimationFrame
+            || window.webkitRequestAnimationFrame
+            || window.msRequestAnimationFrame;
+        window.requestAnimationFrame = requestAnimationFrame;
+        var renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('mCanvas'),
+            antialias: true,   //  开启消除锯齿,默认false
+            precision: "highp"
+        });
+        renderer.setClearColor(0x000000); // yellow
+        renderer.shadowMapEnabled = true;//可渲染阴影
+        renderer.shadowMapSoft = true;//可渲染软阴影
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xcccccc, 0.002);//雾化
+//    var ambientLight = new THREE.AmbientLight(0xffffff);   // 添加环境光
+//    scene.add(ambientLight);
+
+//        var camera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000);
+        var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.set(-4, 2, 5);
+
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        scene.add(camera);
+//        var material = new THREE.MeshLambertMaterial({
+//            color: 0xffffff // white
+//        });
+        var texture = THREE.ImageUtils.loadTexture('image/timg.jpg', {}, function () {
+            renderer.render(scene, camera);
+        });
+        var material = new THREE.MeshLambertMaterial({
+            map: texture
+        });
+        var material2 = new THREE.MeshLambertMaterial({
+            color: 0x060606
+        });
+        var controls = new THREE.TrackballControls(camera);
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.noZoom = false;
+        controls.noPan = false;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+        controls.keys = [65, 83, 68];
+        //新建平面
+        var plane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8, 23, 3), new THREE.MeshLambertMaterial({color: 0x777777}));
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -.8;
+        plane.position.x = 2;
+        plane.position.z = -1;
+        plane.receiveShadow = true;
+        scene.add(plane);
+        var cube = new THREE.Mesh(new THREE.CubeGeometry(1, 1, 3), material);
+        cube.castShadow = true;
+        scene.add(cube);
+        var torus1 = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.08, 8, 20), material2);
+        var torus2 = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.08, 8, 20), material2);
+        var torus3 = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.08, 8, 20), material2);
+        var torus4 = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.08, 8, 20), material2);
+        torus1.castShadow = true;
+        torus2.castShadow = true;
+        torus1.rotation.y = Math.PI / 2;
+        torus2.rotation.y = Math.PI / 2;
+        torus3.rotation.y = Math.PI / 2;
+        torus4.rotation.y = Math.PI / 2;
+        torus1.position.set(-0.5, -0.5, 1);
+//    torus1.position.set(-0.5,-0.5,1);
+        torus2.position.set(-0.5, -0.5, -1);
+        torus3.position.set(0.5, -0.5, 1);
+        torus4.position.set(0.5, -0.5, -1);
+        scene.add(torus1);
+        scene.add(torus2);
+        scene.add(torus3);
+        scene.add(torus4);
+        var light = new THREE.SpotLight(0xffffff, 1, 100, Math.PI / 6, 25);
+        light.position.set(-2, 2, 4);
+        light.target = cube;
+        light.castShadow = true;
+
+        light.shadowCameraNear = 1;
+        light.shadowCameraFar = 1000;
+        light.shadowCameraFov = 60;
+        light.shadowCameraVisible = true;
+
+        light.shadowMapWidth = 1024;
+        light.shadowMapHeight = 1024;
+        light.shadowDarkness = 0.7;
+        scene.add(light);
+        controls.addEventListener('change', render);
+        //加载纹理
+
+// plane
+//    var planeGeo = new THREE.PlaneGeometry(1.5, 1.5);
+//    var plane = new THREE.Mesh(planeGeo, material);
+//    plane.position.x = 1;
+//    scene.add(plane);
+
+// triangle
+//    var triGeo = new THREE.Geometry();
+//    triGeo.vertices = [new THREE.Vector3(0, -0.8, 0),
+//        new THREE.Vector3(-2, -0.8, 0), new THREE.Vector3(-1, 0.8, 0)];
+//    triGeo.faces.push(new THREE.Face3(0, 2, 1));
+//    var triangle = new THREE.Mesh(triGeo, material);
+//    scene.add(triangle);
+
+        renderer.render(scene, camera);
+        animate();
+        //开启动画
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+        }
+
+        //开启监听渲染
+        function render() {
+            renderer.render(scene, camera);
+        }
+
+        //动画
+        id = requestAnimationFrame(draw);
+        function go(value, angle) {
+            cube.position.z = cube.position.z + value * Math.cos(angle % (Math.PI * 2));
+            torus1.position.z = torus1.position.z + value * Math.cos(angle % (Math.PI * 2));
+            torus2.position.z = torus2.position.z + value * Math.cos(angle % (Math.PI * 2));
+            torus3.position.z = torus3.position.z + value * Math.cos(angle % (Math.PI * 2));
+            torus4.position.z = torus4.position.z + value * Math.cos(angle % (Math.PI * 2));
+            torus1.rotation.x = (torus1.rotation.x+value/0.45 ) % (Math.PI * 2);
+            torus2.rotation.x = (torus2.rotation.x+value/0.45 ) % (Math.PI * 2);
+            torus3.rotation.x = (torus3.rotation.x+value/0.45 ) % (Math.PI * 2);
+            torus4.rotation.x = (torus4.rotation.x+value/0.45 ) % (Math.PI * 2);
+
+        }
+
+        //旋转的动画
+        function rotate(value) {
+            cube.rotation.y = (cube.rotation.y + value) % (Math.PI * 2);
+        }
+
+        function draw() {
+            renderer.render(scene, camera);
+            go(0.1, 0);
+            id = requestAnimationFrame(draw);
+            if (cube.position.z > 1) {
+                stop();
+            }
+        }
+
+        function stop() {
+            if (id !== null) {
+                cancelAnimationFrame(id);
+                id = null;
+            }
+        }
+
+        var _front = false, _back = false, _left = false, _right = false;
+
+        function stopKeyDown() {
+            _front = false;
+            _back = false;
+            _left = false;
+            _right = false;
+            if (id !== null) {
+                cancelAnimationFrame(id);
+                id = null;
+            }
+        }
+        window.onkeydown = function (e) {
+            e = e || window.event;
+            id = requestAnimationFrame(keyDraw);
+            switch (e.keyCode) {
+                case 87:
+                    stopKeyDown();
+                    _front = true;
+                    break;
+                case 65:
+                    stopKeyDown();
+                    _back = true;
+                    break;
+                case 68:
+                    stopKeyDown();
+                    _left= true;
+                    break;
+                case 83:
+                    stopKeyDown();
+                    _right=true;
+                    break;
+            }
+
+        };
+        function keyDraw() {
+            renderer.render(scene, camera);
+            if(_front){
+                go(0.3,0);
+            }else if(_back){
+                go(-0.3,0);
+            }else if(_right){
+                rotate(-0.1);
+            }else{
+                rotate(0.1);
+            }
+            id = requestAnimationFrame(keyDraw);
+        }
+    }
+</script>
+</html>
