@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>hello world</title>
+    <script type="text/javascript" src="js/three.js"></script>
+    <script src="js/TrackballControls.js"></script>
+    <script src="js/OBJLoader.js"></script>
+    <script src="js/MTLLoader.js"></script>
+</head>
+<body onload="init()">
+<canvas id="mCanvas" style="width: 500px;height: 400px;"></canvas>
+
+</body>
+<script>
+    function init() {
+        var id = null;
+        var requestAnimationFrame = window.requestAnimationFrame
+            || window.mozRequestAnimationFrame
+            || window.webkitRequestAnimationFrame
+            || window.msRequestAnimationFrame;
+        window.requestAnimationFrame = requestAnimationFrame;
+        var renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('mCanvas'),
+            antialias: true,   //  开启消除锯齿,默认false
+            precision: "highp"
+        });
+        renderer.setClearColor(0x000000); // yellow
+        renderer.shadowMapEnabled = true;//可渲染阴影
+        renderer.shadowMapSoft = true;//可渲染软阴影
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        var scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0xcccccc, 0.002);//雾化
+//    var ambientLight = new THREE.AmbientLight(0xffffff);   // 添加环境光
+//    scene.add(ambientLight);
+//        var camera = new THREE.PerspectiveCamera(45, 4 / 3, 1, 1000);//前正交相机
+        var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100);
+        camera.position.set(3, 2, 3);
+        camera.lookAt(new THREE.Vector3(0, -0.5, 0));
+        scene.add(camera);
+        //相机控制器
+        var controls = new THREE.TrackballControls(camera);
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.noZoom = false;
+        controls.noPan = false;
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+        controls.keys = [65, 83, 68];
+        var car;
+        var mtlLoader = new THREE.MTLLoader();
+        mtlLoader.load('model/MiniCooperCountryman.mtl',function (materials) {
+            var objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load('model/MiniCooperCountryman.obj',function (obj) {
+                obj.traverse(function(child) {
+                    if (child instanceof THREE.Mesh) {
+                        child.material.side = THREE.DoubleSide;
+                    }
+                });
+                obj.position.y = -1.15;
+                obj.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+                car = obj;
+                scene.add(obj);
+                renderer.render(scene, camera);
+            })
+        });
+
+        //新建平面
+        var plane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8, 23, 3), new THREE.MeshLambertMaterial({color: 0x777777}));
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -1.8;
+        plane.position.x = -2;
+        plane.position.z = -1;
+        plane.receiveShadow = true;
+        scene.add(plane);
+        //新建灯光
+        var aLight = new THREE.AmbientLight(0x333333);
+        scene.add(aLight);
+        var light = new THREE.SpotLight(0xffffff, 1, 100, Math.PI / 6, 25);
+        light.position.set(-2, 2, 4);
+        light.castShadow = true;
+
+        light.shadowCameraNear = 1;
+        light.shadowCameraFar = 1000;
+        light.shadowCameraFov = 60;
+        light.shadowCameraVisible = true;
+
+        light.shadowMapWidth = 1024;
+        light.shadowMapHeight = 1024;
+        light.shadowDarkness = 0.7;
+        scene.add(light);
+        controls.addEventListener('change', render);
+        renderer.render(scene, camera);
+        animate();
+        //开启动画
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+        }
+
+        //开启监听渲染
+        function render() {
+            renderer.render(scene, camera);
+        }
+
+        //动画
+        id = requestAnimationFrame(draw);
+        function go(value, angle) {
+            car.position.x = car.position.x + value * Math.cos(angle % (Math.PI * 2));
+        }
+        //旋转的动画
+        function rotate(value) {
+            car.rotation.z = (car.rotation.z + value) % (Math.PI * 2);
+        }
+
+        function draw() {
+            renderer.render(scene, camera);
+            go(0.1, 0);
+            id = requestAnimationFrame(draw);
+            if (car.position.z > 1) {
+                stop();
+            }
+        }
+
+        function stop() {
+            if (id !== null) {
+                cancelAnimationFrame(id);
+                id = null;
+            }
+        }
+
+        var _front = false, _back = false, _left = false, _right = false;
+
+        function stopKeyDown() {
+            _front = false;
+            _back = false;
+            _left = false;
+            _right = false;
+            if (id !== null) {
+                cancelAnimationFrame(id);
+                id = null;
+            }
+        }
+        window.onkeydown = function (e) {
+            e = e || window.event;
+            id = requestAnimationFrame(keyDraw);
+            switch (e.keyCode) {
+                case 87:
+                    stopKeyDown();
+                    _front = true;
+                    break;
+                case 65:
+                    stopKeyDown();
+                    _back = true;
+                    break;
+                case 68:
+                    stopKeyDown();
+                    _left= true;
+                    break;
+                case 83:
+                    stopKeyDown();
+                    _right=true;
+                    break;
+            }
+
+        };
+        function keyDraw() {
+            renderer.render(scene, camera);
+            if(_front){
+                go(0.3,0);
+            }else if(_back){
+                go(-0.3,0);
+            }else if(_right){
+                rotate(-0.1);
+            }else{
+                rotate(0.1);
+            }
+            id = requestAnimationFrame(keyDraw);
+        }
+    }
+</script>
+</html>
